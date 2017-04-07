@@ -214,31 +214,32 @@ class MainFrame(QtGui.QMainWindow):
                     if file_name.endswith(extensions) and root == file_path_from:
                         n_files += 1
 
-        # execute the operation
-        for extensions in file_extensions:
-            for root, dirs, files in os.walk(file_path_from):
-                for file_name in files:
-                    if file_name.endswith(extensions) and root == file_path_from and not file_name.endswith(
-                            self.ZIP_EXTENSIONS):
-                        file_path = file_path_from + '/' + file_name
-                        while os.path.exists(file_path_to + '/' + file_name):
-                            file_name = file_name[:file_name.rfind('.')] + '_' + str(duplicate) + file_name[
-                                                                                                  file_name.rfind('.'):]
-                            duplicate += 1
+        if n_files > 0:
+            # execute the operation
+            for extensions in file_extensions:
+                for root, dirs, files in os.walk(file_path_from):
+                    for file_name in files:
+                        if file_name.endswith(extensions) and root == file_path_from and not file_name.endswith(
+                                self.ZIP_EXTENSIONS):
+                            file_path = file_path_from + '/' + file_name
+                            while os.path.exists(file_path_to + '/' + file_name):
+                                file_name = file_name[:file_name.rfind('.')] + '_' + str(duplicate) + file_name[
+                                                                                                      file_name.rfind('.'):]
+                                duplicate += 1
 
-                        shutil.move(file_path, file_path_to + '/' + file_name)
-                    elif file_name.endswith(self.ZIP_EXTENSIONS) and root == file_path_from:
-                        for mydir in dirs:
-                            if mydir == file_name[:file_name.rfind('.zip')] or \
-                                            mydir == file_name[:file_name.rfind('.tar.gz')] or \
-                                            mydir == file_name[:file_name.rfind('.rar')]:
-                                file_path = root + '/' + file_name
-                                os.remove(file_path)
+                            shutil.move(file_path, file_path_to + '/' + file_name)
+                        elif file_name.endswith(self.ZIP_EXTENSIONS) and root == file_path_from:
+                            for mydir in dirs:
+                                if mydir == file_name[:file_name.rfind('.zip')] or \
+                                                mydir == file_name[:file_name.rfind('.tar.gz')] or \
+                                                mydir == file_name[:file_name.rfind('.rar')]:
+                                    file_path = root + '/' + file_name
+                                    os.remove(file_path)
 
-        self.completed = 0
-        while self.completed < 100:
-            self.completed += 100 / n_files
-            self.progress.setValue(self.completed)
+            self.completed = 0
+            while self.completed < 100:
+                self.completed += 100 / n_files
+                self.progress.setValue(self.completed)
 
 
 def run():
