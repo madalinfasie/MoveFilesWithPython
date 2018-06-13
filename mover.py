@@ -1,17 +1,34 @@
 import shutil
 import os
 import sys
-from PyQt4 import QtGui, QtCore
+from PyQt5.QtWidgets import (QApplication,
+                             QMainWindow,
+                             QAction,
+                             QLabel,
+                             QLineEdit,
+                             QPushButton,
+                             QCheckBox,
+                             QProgressBar,
+                             QVBoxLayout,
+                             QHBoxLayout,
+                             QFormLayout,
+                             QFileDialog,
+                             QWidget,
+                             QStyleFactory,
+                             QMessageBox)
+from PyQt5.QtGui import (QIcon,)
 
 
-class MainFrame(QtGui.QMainWindow):
+class MainFrame(QMainWindow):
+    """ The main frame of the app """
     def __init__(self):
         super(MainFrame, self).__init__()
         self.setGeometry(50, 50, 700, 350)
         self.setWindowTitle('Mover - Move Your Files')
 
-        path = os.path.join(os.path.dirname(sys.modules[__name__].__file__), 'logo.png')
-        self.setWindowIcon(QtGui.QIcon(path))
+        path = os.path.join(os.path.dirname(sys.modules[__name__].__file__),
+                            'logo.png')
+        self.setWindowIcon(QIcon(path))
 
         # set style
         self.style_choice('cleanlooks')
@@ -20,120 +37,151 @@ class MainFrame(QtGui.QMainWindow):
         # create the actions for the menu
 
         # file exit action
-        fileExitAction = QtGui.QAction('&Exit', self)
-        fileExitAction.setShortcut("Ctrl+Q")
-        fileExitAction.setStatusTip('Close the app')
-        fileExitAction.triggered.connect(self.close_application)
+        file_exit_action = QAction('&Exit', self)
+        file_exit_action.setShortcut("Ctrl+Q")
+        file_exit_action.setStatusTip('Close the app')
+        file_exit_action.triggered.connect(self.close_application)
 
         self.statusBar()
         # create the actual menu
-        mainMenu = self.menuBar()
-        fileMenu = mainMenu.addMenu('&File')
-        fileMenu.addAction(fileExitAction)
+        main_menu = self.menuBar()
+        file_menu = main_menu.addMenu('&File')
+        file_menu.addAction(file_exit_action)
         self.home()
 
     def home(self):
+        """ Build the UI design for the application """
         # set labels
-        lblFrom = QtGui.QLabel('From: ')
-        lblTo = QtGui.QLabel('To: ')
-        lblOptions = QtGui.QLabel('Options: ')
+        lbl_from = QLabel('From: ')
+        lbl_to = QLabel('To: ')
+        lbl_options = QLabel('Options: ')
 
         # set the line edits for from and to file paths
-        self.leFrom = QtGui.QLineEdit()
-        self.leTo = QtGui.QLineEdit()
+        self.le_from = QLineEdit()
+        self.le_to = QLineEdit()
 
         # set browse buttons
-        self.btnBrowseFrom = QtGui.QPushButton('Browse...', self)
-        self.btnBrowseTo = QtGui.QPushButton('Browse...', self)
+        self.btn_browse_from = QPushButton('Browse...', self)
+        self.btn_browse_to = QPushButton('Browse...', self)
 
         # set action for browse buttons
-        self.btnBrowseFrom.clicked.connect(self.file_open_leFrom)
-        self.btnBrowseTo.clicked.connect(self.file_open_leTo)
+        self.btn_browse_from.clicked.connect(self.file_open_le_from)
+        self.btn_browse_to.clicked.connect(self.file_open_le_to)
 
         # set option checkboxes
-        ckbMusicOption = QtGui.QCheckBox('Music files', self)
-        ckbDocOption = QtGui.QCheckBox('Text files', self)
-        ckbVideoOption = QtGui.QCheckBox('Video files', self)
-        ckbPicturesOption = QtGui.QCheckBox('Image files', self)
-        ckbZipOption = QtGui.QCheckBox('Remove zip files that are already extracted', self)
+        ckb_music_option = QCheckBox('Music files', self)
+        ckb_doc_option = QCheckBox('Text files', self)
+        ckb_video_option = QCheckBox('Video files', self)
+        ckb_pictures_option = QCheckBox('Image files', self)
+        ckb_zip_option = QCheckBox('Remove zip files that are already extracted',
+                                   self)
 
         # supported extensions
-        self.MUSIC_EXTENSIONS = ('.mp3','.ogg', '.wav')
-        self.VIDEO_EXTENSIONS = ('.mp4', '.avi', '.mkv', '.flv')
-        self.PICTURES_EXTENSIONS = ('.jpg', '.jpeg', '.png', '.tiff', '.gif', '.bmt')
-        self.DOCUMENTS_EXTENSIONS = ('.pdf', '.doc', '.docx', '.odt', '.txt', 'ppt', 'pptx', 'xls', 'xlsx')
-        self.ZIP_EXTENSIONS = ('.zip', '.tar.gz', '.rar')
+        self.MUSIC_EXTENSIONS = ('.mp3',
+                                 '.ogg',
+                                 '.wav')
+        self.VIDEO_EXTENSIONS = ('.mp4',
+                                 '.avi',
+                                 '.mkv',
+                                 '.flv')
+        self.PICTURES_EXTENSIONS = ('.jpg',
+                                    '.jpeg',
+                                    '.png',
+                                    '.tiff',
+                                    '.gif',
+                                    '.bmt')
+        self.DOCUMENTS_EXTENSIONS = ('.pdf',
+                                     '.doc',
+                                     '.docx',
+                                     '.odt',
+                                     '.txt',
+                                     'ppt',
+                                     'pptx',
+                                     'xls',
+                                     'xlsx')
+        self.ZIP_EXTENSIONS = ('.zip',
+                               '.tar.gz',
+                               '.rar')
 
         # set actions for checkboxes and create the list of options
-        self.checkedOptions = [self.MUSIC_EXTENSIONS, self.VIDEO_EXTENSIONS, self.PICTURES_EXTENSIONS,
+        self.checkedOptions = [self.MUSIC_EXTENSIONS,
+                               self.VIDEO_EXTENSIONS,
+                               self.PICTURES_EXTENSIONS,
                                self.DOCUMENTS_EXTENSIONS]
 
-        ckbMusicOption.setChecked(True)
-        ckbMusicOption.stateChanged.connect(lambda: self.checkbox_state(ckbMusicOption))
+        ckb_music_option.setChecked(True)
+        ckb_music_option.stateChanged\
+                        .connect(lambda: self.checkbox_state(ckb_music_option))
 
-        ckbDocOption.setChecked(True)
-        ckbDocOption.stateChanged.connect(lambda: self.checkbox_state(ckbDocOption))
+        ckb_doc_option.setChecked(True)
+        ckb_doc_option.stateChanged\
+                      .connect(lambda: self.checkbox_state(ckb_doc_option))
 
-        ckbVideoOption.setChecked(True)
-        ckbVideoOption.stateChanged.connect(lambda: self.checkbox_state(ckbVideoOption))
+        ckb_video_option.setChecked(True)
+        ckb_video_option.stateChanged\
+                        .connect(lambda: self.checkbox_state(ckb_video_option))
 
-        ckbPicturesOption.setChecked(True)
-        ckbPicturesOption.stateChanged.connect(lambda: self.checkbox_state(ckbPicturesOption))
+        ckb_pictures_option.setChecked(True)
+        ckb_pictures_option.stateChanged\
+                           .connect(lambda: self.checkbox_state(ckb_pictures_option))
 
-        ckbZipOption.toggled.connect(lambda: self.checkbox_state(ckbZipOption))
+        ckb_zip_option.toggled\
+                      .connect(lambda: self.checkbox_state(ckb_zip_option))
 
         # progres bar
-        self.progress = QtGui.QProgressBar(self)
+        self.progress = QProgressBar(self)
 
         # move files button
-        self.btnMoveFiles = QtGui.QPushButton('Move files', self)
-        self.btnMoveFiles.setMaximumSize(100, 40)
-        self.btnMoveFiles.clicked.connect(self.move_files)
+        self.btn_move_files = QPushButton('Move files', self)
+        self.btn_move_files.setMaximumSize(100, 40)
+        self.btn_move_files.clicked.connect(self.move_files)
 
         # create a box layout that contains the options
-        boxOptions = QtGui.QVBoxLayout()
-        boxOptions.addWidget(ckbDocOption)
-        boxOptions.addWidget(ckbMusicOption)
-        boxOptions.addWidget(ckbPicturesOption)
-        boxOptions.addWidget(ckbVideoOption)
-        boxOptions.addWidget(ckbZipOption)
+        box_options = QVBoxLayout()
+        box_options.addWidget(ckb_doc_option)
+        box_options.addWidget(ckb_music_option)
+        box_options.addWidget(ckb_pictures_option)
+        box_options.addWidget(ckb_video_option)
+        box_options.addWidget(ckb_zip_option)
 
-        # create box layout with browse buttons and line edit so I can add a form row with more than two parameters
-        boxFrom = QtGui.QHBoxLayout()
-        boxFrom.addWidget(self.leFrom)
-        boxFrom.addWidget(self.btnBrowseFrom)
+        # create box layout with browse buttons and line edit
+        # so I can add a form row with more than two parameters
+        box_from = QHBoxLayout()
+        box_from.addWidget(self.le_from)
+        box_from.addWidget(self.btn_browse_from)
 
-        boxTo = QtGui.QHBoxLayout()
-        boxTo.addWidget(self.leTo)
-        boxTo.addWidget(self.btnBrowseTo)
+        box_to = QHBoxLayout()
+        box_to.addWidget(self.le_to)
+        box_to.addWidget(self.btn_browse_to)
 
         # create a form layout that contains the options for the user
-        formLayout = QtGui.QFormLayout()
-        formLayout.addRow(lblFrom, boxFrom)
-        formLayout.addRow(lblTo, boxTo)
-        formLayout.addRow(lblOptions, boxOptions)
+        form_layout = QFormLayout()
+        form_layout.addRow(lbl_from, box_from)
+        form_layout.addRow(lbl_to, box_to)
+        form_layout.addRow(lbl_options, box_options)
 
-        boxLayoutHorizontal = QtGui.QHBoxLayout()
-        boxLayoutHorizontal.addWidget(self.btnMoveFiles)
+        box_layout_horizontal = QHBoxLayout()
+        box_layout_horizontal.addWidget(self.btn_move_files)
 
         # add the form, move files button and progress bar to a box layout
-        boxLayout = QtGui.QVBoxLayout()
-        boxLayout.addLayout(formLayout)
-        boxLayout.addStretch()
-        boxLayout.addLayout(boxLayoutHorizontal)
-        boxLayout.addWidget(self.progress)
+        box_layout = QVBoxLayout()
+        box_layout.addLayout(form_layout)
+        box_layout.addStretch()
+        box_layout.addLayout(box_layout_horizontal)
+        box_layout.addWidget(self.progress)
 
         # add the box layout containing all the components to a central widget
-        centralWidget = QtGui.QWidget()
-        centralWidget.setLayout(boxLayout)
+        central_widget = QWidget()
+        central_widget.setLayout(box_layout)
 
         # set the central widget as the layout of the window
-        self.setCentralWidget(centralWidget)
+        self.setCentralWidget(central_widget)
 
         self.show()
 
     # checkbox state changed
     def checkbox_state(self, checkbox):
+        """ Add to the options list the checked checkboxes """
         if checkbox.text() == "Music files":
             if checkbox.isChecked():
                 self.checkedOptions.append(self.MUSIC_EXTENSIONS)
@@ -165,35 +213,43 @@ class MainFrame(QtGui.QMainWindow):
                 self.checkedOptions.remove(self.ZIP_EXTENSIONS)
 
     # open file
-    def file_open_leFrom(self):
-        directoryPath = QtGui.QFileDialog.getExistingDirectory(self, 'Select directory')
-        self.leFrom.setText(directoryPath)
+    def file_open_le_from(self):
+        """ Open the directory browser to select the from directory """
+        directory_path = QFileDialog.getExistingDirectory(self,
+                                                          'Select directory')
+        self.le_from.setText(directory_path)
 
     # open file
-    def file_open_leTo(self):
-        directoryPath = QtGui.QFileDialog.getExistingDirectory(self, 'Select directory')
-        self.leTo.setText(directoryPath)
+    def file_open_le_to(self):
+        """ Open the directory browser to select the to directory """
+        directory_path = QFileDialog.getExistingDirectory(self,
+                                                          'Select directory')
+        self.le_to.setText(directory_path)
 
     # progress bar function
     def move_files(self):
+        """ Move the files and give an alert to get user's approval """
         # show a warning before moving files
-        choice = QtGui.QMessageBox.question(self,
-                                            'Warning!',
-                                            'Are you sure you want to move this files?',
-                                            QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
-        if choice == QtGui.QMessageBox.Yes:
-            self.run_move_files(self.leFrom.text(), self.leTo.text(), self.checkedOptions)
+        choice = QMessageBox.question(self,
+                                      'Warning!',
+                                      'Are you sure you want to move this files?',
+                                      QMessageBox.Yes | QMessageBox.No)
+        if choice == QMessageBox.Yes:
+            self.run_move_files(self.le_from.text(),
+                                self.le_to.text(),
+                                self.checkedOptions)
         else:
             pass
 
     # close application
     def close_application(self):
+        """ Close the app """
         # Warning message
-        choice = QtGui.QMessageBox.question(self,
-                                            'Warning!',
-                                            'Are you sure you want to exit?',
-                                            QtGui.QMessageBox.Yes | QtGui.QMessageBox.No)
-        if choice == QtGui.QMessageBox.Yes:
+        choice = QMessageBox.question(self,
+                                      'Warning!',
+                                      'Are you sure you want to exit?',
+                                      QMessageBox.Yes | QMessageBox.No)
+        if choice == QMessageBox.Yes:
             sys.exit()
         else:
             pass
@@ -201,9 +257,13 @@ class MainFrame(QtGui.QMainWindow):
     # choose style
     @staticmethod
     def style_choice(text):
-        QtGui.QApplication.setStyle(QtGui.QStyleFactory.create(text))
+        """ Set the style provided as a parameter """
+        QApplication.setStyle(QStyleFactory.create(text))
 
     def run_move_files(self, file_path_from, file_path_to, file_extensions):
+        """ The logic for moving the files from one location to another
+        It takes as parameters the two locations and a list with the
+        extensions for the files that will be moved """
         duplicate = 1
         n_files = 0
 
@@ -211,7 +271,8 @@ class MainFrame(QtGui.QMainWindow):
         for extensions in file_extensions:
             for root, dirs, files in os.walk(file_path_from):
                 for file_name in files:
-                    if file_name.endswith(extensions) and root == file_path_from:
+                    if file_name.endswith(extensions)\
+                        and root == file_path_from:
                         n_files += 1
 
         if n_files > 0:
@@ -219,34 +280,41 @@ class MainFrame(QtGui.QMainWindow):
             for extensions in file_extensions:
                 for root, dirs, files in os.walk(file_path_from):
                     for file_name in files:
-                        if file_name.endswith(extensions) and root == file_path_from and not file_name.endswith(
-                                self.ZIP_EXTENSIONS):
+                        if file_name.endswith(extensions)\
+                            and root == file_path_from\
+                            and not file_name.endswith(self.ZIP_EXTENSIONS):
+
                             file_path = file_path_from + '/' + file_name
-                            while os.path.exists(file_path_to + '/' + file_name):
-                                file_name = file_name[:file_name.rfind('.')] + '_' + str(duplicate) + file_name[
-                                                                                                      file_name.rfind('.'):]
+                            while os.path\
+                                    .exists(file_path_to + '/' + file_name):
+                                file_name = file_name[:file_name.rfind('.')]\
+                                            + '_'\
+                                            + str(duplicate)\
+                                            + file_name[file_name.rfind('.'):]
                                 duplicate += 1
 
-                            shutil.move(file_path, file_path_to + '/' + file_name)
-                        elif file_name.endswith(self.ZIP_EXTENSIONS) and root == file_path_from:
+                            shutil.move(file_path,
+                                        file_path_to\
+                                        + '/'\
+                                        + file_name)
+                        elif file_name.endswith(self.ZIP_EXTENSIONS)\
+                            and root == file_path_from:
+
                             for mydir in dirs:
-                                if mydir == file_name[:file_name.rfind('.zip')] or \
-                                                mydir == file_name[:file_name.rfind('.tar.gz')] or \
-                                                mydir == file_name[:file_name.rfind('.rar')]:
+                                if mydir == file_name[:file_name.rfind('.zip')]\
+                                    or mydir == file_name[:file_name.rfind('.tar.gz')]\
+                                    or mydir == file_name[:file_name.rfind('.rar')]:
+
                                     file_path = root + '/' + file_name
                                     os.remove(file_path)
 
-            self.completed = 0
-            while self.completed < 100:
-                self.completed += 100 / n_files
-                self.progress.setValue(self.completed)
-
-
-def run():
-    app = QtGui.QApplication(sys.argv)
-    buildGui = MainFrame()
-    sys.exit(app.exec_())
+            completed = 0
+            while completed <= 100:
+                completed += 100 / n_files
+                self.progress.setValue(completed)
 
 
 if __name__ == '__main__':
-    run()
+    app = QApplication(sys.argv)
+    build_gui = MainFrame()
+    sys.exit(app.exec_())
