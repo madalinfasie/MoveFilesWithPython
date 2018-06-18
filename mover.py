@@ -19,6 +19,92 @@ from PyQt5.QtWidgets import (QApplication,
 from PyQt5.QtGui import (QIcon,)
 
 
+# supported extensions
+MUSIC_EXTENSIONS = ('.mp3',
+                    '.ogg',
+                    '.wav')
+VIDEO_EXTENSIONS = ('.mp4',
+                    '.avi',
+                    '.mkv',
+                    '.flv')
+PICTURES_EXTENSIONS = ('.jpg',
+                       '.jpeg',
+                       '.png',
+                       '.tiff',
+                       '.gif',
+                       '.bmt')
+DOCUMENTS_EXTENSIONS = ('',
+                        '.pdf',
+                        '.doc',
+                        '.docx',
+                        '.odt',
+                        '.txt',
+                        '.ppt',
+                        '.pptx',
+                        '.xls',
+                        '.xlsx')
+ZIP_EXTENSIONS = ('.zip',
+                  '.tar.gz',
+                  '.rar')
+
+class Mover:
+    def __init__(self, progressbar):
+        self.progress = progressbar
+
+    def run_move_files(self, file_path_from, file_path_to, file_extensions):
+        """ The logic for moving the files from one location to another
+        It takes as parameters the two locations and a list with the
+        extensions for the files that will be moved """
+        duplicate = 1
+        n_files = 0
+
+        # count all the files affected
+        for extensions in file_extensions:
+            for root, dirs, files in os.walk(file_path_from):
+                for file_name in files:
+                    if file_name.endswith(extensions)\
+                        and root == file_path_from:
+                        n_files += 1
+
+        if n_files > 0:
+            # execute the operation
+            for extensions in file_extensions:
+                for root, dirs, files in os.walk(file_path_from):
+                    for file_name in files:
+                        if file_name.endswith(extensions)\
+                            and root == file_path_from\
+                            and not file_name.endswith(ZIP_EXTENSIONS):
+
+                            file_path = file_path_from + '/' + file_name
+                            while os.path\
+                                    .exists(file_path_to + '/' + file_name):
+                                file_name = file_name[:file_name.rfind('.')]\
+                                            + '_'\
+                                            + str(duplicate)\
+                                            + file_name[file_name.rfind('.'):]
+                                duplicate += 1
+
+                            shutil.move(file_path,
+                                        file_path_to\
+                                        + '/'\
+                                        + file_name)
+                        elif file_name.endswith(ZIP_EXTENSIONS)\
+                            and root == file_path_from:
+
+                            for mydir in dirs:
+                                if mydir == file_name[:file_name.rfind('.zip')]\
+                                    or mydir == file_name[:file_name.rfind('.tar.gz')]\
+                                    or mydir == file_name[:file_name.rfind('.rar')]:
+
+                                    file_path = root + '/' + file_name
+                                    os.remove(file_path)
+
+            completed = 0
+            while completed <= 100:
+                completed += 100 / n_files
+                self.progress.setValue(completed)
+
+
 class MainFrame(QMainWindow):
     """ The main frame of the app """
     def __init__(self):
@@ -76,38 +162,11 @@ class MainFrame(QMainWindow):
         ckb_zip_option = QCheckBox('Remove zip files that are already extracted',
                                    self)
 
-        # supported extensions
-        self.MUSIC_EXTENSIONS = ('.mp3',
-                                 '.ogg',
-                                 '.wav')
-        self.VIDEO_EXTENSIONS = ('.mp4',
-                                 '.avi',
-                                 '.mkv',
-                                 '.flv')
-        self.PICTURES_EXTENSIONS = ('.jpg',
-                                    '.jpeg',
-                                    '.png',
-                                    '.tiff',
-                                    '.gif',
-                                    '.bmt')
-        self.DOCUMENTS_EXTENSIONS = ('.pdf',
-                                     '.doc',
-                                     '.docx',
-                                     '.odt',
-                                     '.txt',
-                                     'ppt',
-                                     'pptx',
-                                     'xls',
-                                     'xlsx')
-        self.ZIP_EXTENSIONS = ('.zip',
-                               '.tar.gz',
-                               '.rar')
-
         # set actions for checkboxes and create the list of options
-        self.checkedOptions = [self.MUSIC_EXTENSIONS,
-                               self.VIDEO_EXTENSIONS,
-                               self.PICTURES_EXTENSIONS,
-                               self.DOCUMENTS_EXTENSIONS]
+        self.checkedOptions = [MUSIC_EXTENSIONS,
+                               VIDEO_EXTENSIONS,
+                               PICTURES_EXTENSIONS,
+                               DOCUMENTS_EXTENSIONS]
 
         ckb_music_option.setChecked(True)
         ckb_music_option.stateChanged\
@@ -184,33 +243,33 @@ class MainFrame(QMainWindow):
         """ Add to the options list the checked checkboxes """
         if checkbox.text() == "Music files":
             if checkbox.isChecked():
-                self.checkedOptions.append(self.MUSIC_EXTENSIONS)
+                self.checkedOptions.append(MUSIC_EXTENSIONS)
             else:
-                self.checkedOptions.remove(self.MUSIC_EXTENSIONS)
+                self.checkedOptions.remove(MUSIC_EXTENSIONS)
 
         if checkbox.text() == "Text files":
             if checkbox.isChecked():
-                self.checkedOptions.append(self.DOCUMENTS_EXTENSIONS)
+                self.checkedOptions.append(DOCUMENTS_EXTENSIONS)
             else:
-                self.checkedOptions.remove(self.DOCUMENTS_EXTENSIONS)
+                self.checkedOptions.remove(DOCUMENTS_EXTENSIONS)
 
         if checkbox.text() == "Video files":
             if checkbox.isChecked():
-                self.checkedOptions.append(self.VIDEO_EXTENSIONS)
+                self.checkedOptions.append(VIDEO_EXTENSIONS)
             else:
-                self.checkedOptions.remove(self.VIDEO_EXTENSIONS)
+                self.checkedOptions.remove(VIDEO_EXTENSIONS)
 
         if checkbox.text() == "Image files":
             if checkbox.isChecked():
-                self.checkedOptions.append(self.PICTURES_EXTENSIONS)
+                self.checkedOptions.append(PICTURES_EXTENSIONS)
             else:
-                self.checkedOptions.remove(self.PICTURES_EXTENSIONS)
+                self.checkedOptions.remove(PICTURES_EXTENSIONS)
 
         if checkbox.text() == "Remove zip files that are already extracted":
             if checkbox.isChecked():
-                self.checkedOptions.append(self.ZIP_EXTENSIONS)
+                self.checkedOptions.append(ZIP_EXTENSIONS)
             else:
-                self.checkedOptions.remove(self.ZIP_EXTENSIONS)
+                self.checkedOptions.remove(ZIP_EXTENSIONS)
 
     # open file
     def file_open_le_from(self):
@@ -235,7 +294,8 @@ class MainFrame(QMainWindow):
                                       'Are you sure you want to move this files?',
                                       QMessageBox.Yes | QMessageBox.No)
         if choice == QMessageBox.Yes:
-            self.run_move_files(self.le_from.text(),
+            mover = Mover(self.progress)
+            mover.run_move_files(self.le_from.text(),
                                 self.le_to.text(),
                                 self.checkedOptions)
         else:
@@ -259,59 +319,6 @@ class MainFrame(QMainWindow):
     def style_choice(text):
         """ Set the style provided as a parameter """
         QApplication.setStyle(QStyleFactory.create(text))
-
-    def run_move_files(self, file_path_from, file_path_to, file_extensions):
-        """ The logic for moving the files from one location to another
-        It takes as parameters the two locations and a list with the
-        extensions for the files that will be moved """
-        duplicate = 1
-        n_files = 0
-
-        # count all the files affected
-        for extensions in file_extensions:
-            for root, dirs, files in os.walk(file_path_from):
-                for file_name in files:
-                    if file_name.endswith(extensions)\
-                        and root == file_path_from:
-                        n_files += 1
-
-        if n_files > 0:
-            # execute the operation
-            for extensions in file_extensions:
-                for root, dirs, files in os.walk(file_path_from):
-                    for file_name in files:
-                        if file_name.endswith(extensions)\
-                            and root == file_path_from\
-                            and not file_name.endswith(self.ZIP_EXTENSIONS):
-
-                            file_path = file_path_from + '/' + file_name
-                            while os.path\
-                                    .exists(file_path_to + '/' + file_name):
-                                file_name = file_name[:file_name.rfind('.')]\
-                                            + '_'\
-                                            + str(duplicate)\
-                                            + file_name[file_name.rfind('.'):]
-                                duplicate += 1
-
-                            shutil.move(file_path,
-                                        file_path_to\
-                                        + '/'\
-                                        + file_name)
-                        elif file_name.endswith(self.ZIP_EXTENSIONS)\
-                            and root == file_path_from:
-
-                            for mydir in dirs:
-                                if mydir == file_name[:file_name.rfind('.zip')]\
-                                    or mydir == file_name[:file_name.rfind('.tar.gz')]\
-                                    or mydir == file_name[:file_name.rfind('.rar')]:
-
-                                    file_path = root + '/' + file_name
-                                    os.remove(file_path)
-
-            completed = 0
-            while completed <= 100:
-                completed += 100 / n_files
-                self.progress.setValue(completed)
 
 
 if __name__ == '__main__':
