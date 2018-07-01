@@ -161,12 +161,10 @@ class MainFrame(QMainWindow):
         # set browse buttons
         self.btn_browse_from = QPushButton('Browse...', self)
         self.btn_browse_to = QPushButton('Browse...', self)
-        self.btn_switch = QPushButton('Switch', self)
 
         # set action for browse buttons
         self.btn_browse_from.clicked.connect(self.file_open_le_from)
         self.btn_browse_to.clicked.connect(self.file_open_le_to)
-        self.btn_switch.clicked.connect(self.switch_paths)
 
         # set option checkboxes
         ckb_music_option = QCheckBox('Music files', self)
@@ -209,6 +207,10 @@ class MainFrame(QMainWindow):
         self.btn_move_files.setMaximumSize(100, 40)
         self.btn_move_files.clicked.connect(self.move_files)
 
+        # swithc paths button
+        self.btn_switch = QPushButton('Switch paths', self)
+        self.btn_switch.clicked.connect(self.switch_paths)
+
         # create a box layout that contains the options
         box_options = QVBoxLayout()
         box_options.addWidget(ckb_doc_option)
@@ -233,22 +235,22 @@ class MainFrame(QMainWindow):
         form_layout.addRow(lbl_to, box_to)
         form_layout.addRow(lbl_options, box_options)
 
-        box_layout_horizontal = QHBoxLayout()
-        box_layout_horizontal.addWidget(self.btn_move_files)
-        box_layout_horizontal_switch = QHBoxLayout()
-        box_layout_horizontal_switch.addWidget(self.btn_switch)
+        box_layout_move_switch_btn = QHBoxLayout()
+        box_layout_move_switch_btn.addStretch()
+        box_layout_move_switch_btn.addWidget(self.btn_switch)
+        box_layout_move_switch_btn.addWidget(self.btn_move_files)
+        box_layout_move_switch_btn.addStretch()
 
         # add the form, move files button and progress bar to a box layout
-        box_layout = QVBoxLayout()
-        box_layout.addLayout(form_layout)
-        box_layout.addStretch()
-        box_layout.addLayout(box_layout_horizontal)
-        box_layout.addLayout(box_layout_horizontal_switch)
-        box_layout.addWidget(self.progress)
+        main_layout = QVBoxLayout()
+        main_layout.addLayout(form_layout)
+        main_layout.addStretch()
+        main_layout.addLayout(box_layout_move_switch_btn)
+        main_layout.addWidget(self.progress)
 
         # add the box layout containing all the components to a central widget
         central_widget = QWidget()
-        central_widget.setLayout(box_layout)
+        central_widget.setLayout(main_layout)
 
         # set the central widget as the layout of the window
         self.setCentralWidget(central_widget)
