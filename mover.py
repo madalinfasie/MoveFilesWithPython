@@ -17,8 +17,10 @@ from PyQt5.QtWidgets import (QApplication,
                              QFileDialog,
                              QWidget,
                              QStyleFactory,
-                             QMessageBox)
-from PyQt5.QtGui import (QIcon,)
+                             QMessageBox,
+                             )
+from PyQt5.QtGui import QIcon
+from PyQt5.QtCore import QThread, QObject, pyqtSlot, pyqtSignal
 
 
 # supported extensions
@@ -54,6 +56,7 @@ ZIP_EXTENSIONS = ('.zip',
 
 class Mover:
     """ Moves files from one folder to another """
+    signal_progressbar = pyqtSignal(int)
     def __init__(self, progressbar):
         self.progress = progressbar
 
@@ -68,7 +71,7 @@ class Mover:
         extensions for the files that will be moved """
         n_files = 0
         remove_zips = False
-
+        total_files_size = 0
         # If zip option is checked, remove the extensions from list
         # and mark remove_zips as True
         if ZIP_EXTENSIONS in file_extensions:
@@ -91,6 +94,8 @@ class Mover:
         # Move files and remove archives that were already unzipped
         for _, dirs, files in os.walk(file_path_from):
             for file_name in files:
+                total_files_size += path.getsize(path.join(file_path_from,
+                                                           file_name))
                 if file_name.endswith(tuple(file_extensions)):
                     duplicate = 0
                     file_name_dest = file_name
@@ -107,15 +112,27 @@ class Mover:
                         if dir_name == path.splitext(file_name):
                             os.remove(path.join(file_path_from, file_name))
 
-            completed = 0
-            while completed <= 100:
-                completed += 100 / n_files
-                self.progress.setValue(completed)
+            # import threading
+
+            # threading.Thread(target=self.update_progress,
+            #                 args=(total_files_size,)
+            #                 ).start()
+            # percentage = 0
+            # print(n_files)
+            # while percentage <= n_files:
+            #     percentage += 100 / n_files
+            #     self.slot_progressbar.emit(percentage)
 
             # Break after the first execution so just the folders in
             # current folder are moved
             return n_files
 
+    # def update_progress(self, total_files_size):
+    #     """ Update function for the progressbar """        
+    #     completed = 0
+    #     while completed <= 100:
+    #         completed += 100 / total_files_size
+    #         self.progress.setValue(completed)
 
 class MainFrame(QMainWindow):
     """ The main frame of the app """
@@ -123,140 +140,147 @@ class MainFrame(QMainWindow):
         super(MainFrame, self).__init__()
         self.setGeometry(50, 50, 700, 350)
         self.setWindowTitle('Mover - Move Your Files')
-
         logo_path = path.join(os.path.dirname(sys.modules[__name__].__file__),
                               'logo.png')
         self.setWindowIcon(QIcon(logo_path))
 
-        # set style
         self.style_choice('cleanlooks')
 
-        # set a menu bar
-        # create the actions for the menu
+        # Defaults
+        self.checked_options = []
+        self.statusBar()
 
-        # file exit action
+        self.ckb_music_text = 'Music files'
+        self.ckb_doc_text = 'Text files'
+        self.ckb_video_text = 'Video files'
+        self.ckb_pictures_text = 'Image files'
+        self.ckb_zip_text = 'Remove zip files that are already extracted'
+
+        # Setup the menu bar
+        main_menu = self.menuBar()
+        file_menu = main_menu.addMenu('&File')
+        # File exit action
         file_exit_action = QAction('&Exit', self)
         file_exit_action.setShortcut("Ctrl+Q")
         file_exit_action.setStatusTip('Close the app')
         file_exit_action.triggered.connect(self.close_application)
 
-        self.statusBar()
-        # create the actual menu
-        main_menu = self.menuBar()
-        file_menu = main_menu.addMenu('&File')
+        # Add actions to the menu
         file_menu.addAction(file_exit_action)
-        self.home()
 
-    def home(self):
+        # Build the UI
+        self.build_ui()
+
+    def build_ui(self):
         """ Build the UI design for the application """
-        # set labels
+        # Define components
+        # Labels
         lbl_from = QLabel('From: ')
         lbl_to = QLabel('To: ')
         lbl_options = QLabel('Options: ')
 
-        # set the line edits for from and to file paths
+        # Line edits for the paths
         self.le_from = QLineEdit()
         self.le_to = QLineEdit()
 
-        # set browse buttons
+        # Browse buttons
         self.btn_browse_from = QPushButton('Browse...', self)
         self.btn_browse_to = QPushButton('Browse...', self)
 
-        # set action for browse buttons
-        self.btn_browse_from.clicked.connect(self.file_open_le_from)
-        self.btn_browse_to.clicked.connect(self.file_open_le_to)
+        # Buttons for move files and switch paths
+        self.btn_move_files = QPushButton('Move files', self)
+        self.btn_switch = QPushButton('Switch paths', self)
 
-        # set option checkboxes
-        ckb_music_option = QCheckBox('Music files', self)
-        ckb_doc_option = QCheckBox('Text files', self)
-        ckb_video_option = QCheckBox('Video files', self)
-        ckb_pictures_option = QCheckBox('Image files', self)
-        ckb_zip_option = QCheckBox('Remove zip files that are already extracted',
-                                   self)
-
-        # set actions for checkboxes and create the list of options
-        self.checked_options = [MUSIC_EXTENSIONS,
-                                VIDEO_EXTENSIONS,
-                                PICTURES_EXTENSIONS,
-                                DOCUMENTS_EXTENSIONS]
-
-        ckb_music_option.setChecked(True)
-        ckb_music_option.stateChanged\
-                        .connect(lambda: self.checkbox_state(ckb_music_option))
-
-        ckb_doc_option.setChecked(True)
-        ckb_doc_option.stateChanged\
-                      .connect(lambda: self.checkbox_state(ckb_doc_option))
-
-        ckb_video_option.setChecked(True)
-        ckb_video_option.stateChanged\
-                        .connect(lambda: self.checkbox_state(ckb_video_option))
-
-        ckb_pictures_option.setChecked(True)
-        ckb_pictures_option.stateChanged\
-                           .connect(lambda: self.checkbox_state(ckb_pictures_option))
-
-        ckb_zip_option.toggled\
-                      .connect(lambda: self.checkbox_state(ckb_zip_option))
+        # Checkbox options
+        ckb_music_option = QCheckBox(self.ckb_music_text, self)
+        ckb_doc_option = QCheckBox(self.ckb_doc_text, self)
+        ckb_video_option = QCheckBox(self.ckb_video_text, self)
+        ckb_pictures_option = QCheckBox(self.ckb_pictures_text, self)
+        ckb_zip_option = QCheckBox(self.ckb_zip_text, self)
 
         # progres bar
         self.progress = QProgressBar(self)
 
-        # move files button
-        self.btn_move_files = QPushButton('Move files', self)
+        # Events
+        # Browse buttons
+        self.btn_browse_from.clicked.connect(self.file_open_le_from)
+        self.btn_browse_to.clicked.connect(self.file_open_le_to)
+
+        # Move files button
         self.btn_move_files.setMaximumSize(100, 40)
         self.btn_move_files.clicked.connect(self.move_files)
 
-        # swithc paths button
-        self.btn_switch = QPushButton('Switch paths', self)
+        # Switch paths button
         self.btn_switch.clicked.connect(self.switch_paths)
 
-        # create a box layout that contains the options
-        box_options = QVBoxLayout()
-        box_options.addWidget(ckb_doc_option)
-        box_options.addWidget(ckb_music_option)
-        box_options.addWidget(ckb_pictures_option)
-        box_options.addWidget(ckb_video_option)
-        box_options.addWidget(ckb_zip_option)
+        # Checkboxes events
+        ckb_music_option.stateChanged\
+                        .connect(lambda: self.checkbox_state(ckb_music_option))
+        ckb_doc_option.stateChanged\
+                      .connect(lambda: self.checkbox_state(ckb_doc_option))
+        ckb_video_option.stateChanged\
+                        .connect(lambda: self.checkbox_state(ckb_video_option))
+        ckb_pictures_option.stateChanged\
+                           .connect(lambda: self.checkbox_state(ckb_pictures_option))
+        ckb_zip_option.stateChanged\
+                      .connect(lambda: self.checkbox_state(ckb_zip_option))
 
-        # create box layout with browse buttons and line edit
-        # so I can add a form row with more than two parameters
-        box_from = QHBoxLayout()
-        box_from.addWidget(self.le_from)
-        box_from.addWidget(self.btn_browse_from)
+        # Layouts
+        # Define layouts
+        blayout_chkbx_options = QVBoxLayout()
+        blayout_path_from = QHBoxLayout()
+        blayout_path_to = QHBoxLayout()
+        flayout_paths = QFormLayout()
+        blayout_main = QVBoxLayout()
+        blayout_move_switch_btn = QHBoxLayout()
 
-        box_to = QHBoxLayout()
-        box_to.addWidget(self.le_to)
-        box_to.addWidget(self.btn_browse_to)
+        # Populate layouts
+        # Paths layout
+        blayout_path_from.addWidget(self.le_from)
+        blayout_path_from.addWidget(self.btn_browse_from)
 
-        # create a form layout that contains the options for the user
-        form_layout = QFormLayout()
-        form_layout.addRow(lbl_from, box_from)
-        form_layout.addRow(lbl_to, box_to)
-        form_layout.addRow(lbl_options, box_options)
+        blayout_path_to.addWidget(self.le_to)
+        blayout_path_to.addWidget(self.btn_browse_to)
 
-        box_layout_move_switch_btn = QHBoxLayout()
-        box_layout_move_switch_btn.addStretch()
-        box_layout_move_switch_btn.addWidget(self.btn_switch)
-        box_layout_move_switch_btn.addWidget(self.btn_move_files)
-        box_layout_move_switch_btn.addStretch()
+        # Checkbox options layout
+        blayout_chkbx_options.addWidget(ckb_doc_option)
+        blayout_chkbx_options.addWidget(ckb_music_option)
+        blayout_chkbx_options.addWidget(ckb_pictures_option)
+        blayout_chkbx_options.addWidget(ckb_video_option)
+        blayout_chkbx_options.addWidget(ckb_zip_option)
 
-        # add the form, move files button and progress bar to a box layout
-        main_layout = QVBoxLayout()
-        main_layout.addLayout(form_layout)
-        main_layout.addStretch()
-        main_layout.addLayout(box_layout_move_switch_btn)
-        main_layout.addWidget(self.progress)
+        # Include paths and checkbox layouts to a form layout
+        flayout_paths.addRow(lbl_from, blayout_path_from)
+        flayout_paths.addRow(lbl_to, blayout_path_to)
+        flayout_paths.addRow(lbl_options, blayout_chkbx_options)
 
-        # add the box layout containing all the components to a central widget
+        # Switch and move buttons layout
+        blayout_move_switch_btn.addStretch()
+        blayout_move_switch_btn.addWidget(self.btn_switch)
+        blayout_move_switch_btn.addWidget(self.btn_move_files)
+        blayout_move_switch_btn.addStretch()
+
+        # Put all layouts together in a main layout
+        blayout_main.addLayout(flayout_paths)
+        blayout_main.addStretch()
+        blayout_main.addLayout(blayout_move_switch_btn)
+        blayout_main.addWidget(self.progress)
+
+        # Add the main layout to the central widget
         central_widget = QWidget()
-        central_widget.setLayout(main_layout)
-
-        # set the central widget as the layout of the window
+        central_widget.setLayout(blayout_main)
         self.setCentralWidget(central_widget)
 
-        # Set the defaults from cache file
-        if path.exists('.cachedpaths'):
+        # Set the defaults for options and paths
+        if not path.exists('.cachedpaths'):
+            # Set initial checkbox states
+            ckb_music_option.setChecked(True)
+            ckb_doc_option.setChecked(True)
+            ckb_video_option.setChecked(True)
+            ckb_pictures_option.setChecked(True)
+            ckb_zip_option.setChecked(False)
+        else:
+            # Set paths and checkbox states based on the file
             with open('.cachedpaths', 'r') as cache:
                 lines = cache.readlines()
                 self.le_from.setText(lines[0].strip())
@@ -295,31 +319,31 @@ class MainFrame(QMainWindow):
     # checkbox state changed
     def checkbox_state(self, checkbox):
         """ Add to the options list the checked checkboxes """
-        if checkbox.text() == "Music files":
+        if checkbox.text() == self.ckb_music_text:
             if checkbox.isChecked():
                 self.checked_options.append(MUSIC_EXTENSIONS)
             else:
                 self.checked_options.remove(MUSIC_EXTENSIONS)
 
-        if checkbox.text() == "Text files":
+        if checkbox.text() == self.ckb_doc_text:
             if checkbox.isChecked():
                 self.checked_options.append(DOCUMENTS_EXTENSIONS)
             else:
                 self.checked_options.remove(DOCUMENTS_EXTENSIONS)
 
-        if checkbox.text() == "Video files":
+        if checkbox.text() == self.ckb_video_text:
             if checkbox.isChecked():
                 self.checked_options.append(VIDEO_EXTENSIONS)
             else:
                 self.checked_options.remove(VIDEO_EXTENSIONS)
 
-        if checkbox.text() == "Image files":
+        if checkbox.text() == self.ckb_pictures_text:
             if checkbox.isChecked():
                 self.checked_options.append(PICTURES_EXTENSIONS)
             else:
                 self.checked_options.remove(PICTURES_EXTENSIONS)
 
-        if checkbox.text() == "Remove zip files that are already extracted":
+        if checkbox.text() == self.ckb_zip_text:
             if checkbox.isChecked():
                 self.checked_options.append(ZIP_EXTENSIONS)
             else:
@@ -381,7 +405,7 @@ class MainFrame(QMainWindow):
 
             if result > 0:
                 self.statusBar()\
-                    .showMessage(f'Done. {result} files have been moved.')
+                    .showMessage(f'Done. {result} files were affected.')
             elif result == -1:
                 self.statusBar()\
                     .showMessage('No files to move.')
